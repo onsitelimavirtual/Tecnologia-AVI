@@ -1,6 +1,6 @@
 /* Cache simples para uso offline após visita em HTTPS. */
-const CACHE = 'toolkit-programador-1.0.0';
-const FILES = ['./', './index.html', './styles.css', './app.js', './icon.svg', './icon-192.png', './icon-512.png', './manifest.webmanifest'];
+const CACHE = 'toolkit-programador-3.0.0';
+const FILES = ['./', './index.html', './styles.css', './app.js', './app-catalog.js', './ai-engine.js', './ai-ui.js', './icon.svg', './icon-192.png', './icon-512.png', './manifest.webmanifest'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(FILES)).then(() => self.skipWaiting()));
 });

@@ -1,6 +1,6 @@
-/* Toolkit do Programador — motor local, receitas determinísticas e interface.
-   Copyright (c) 2026 Nailson Rodrigues de Lima.
-   Não utiliza rede, LLM, eval ou execução automática dos scripts. */
+/* Toolkit do Programador — motor local e interface.
+   Modulo de IA Estendida opcional em ai-engine.js e ai-ui.js.
+   Copyright (c) 2026 Nailson Rodrigues de Lima. */
 (function () {
   'use strict';
 
@@ -242,6 +242,11 @@
     if (!LANGUAGES[language]) throw new Error('Selecione uma linguagem válida.');
     if (!String(goal || '').trim()) throw new Error('Informe a função pretendida.');
     if (String(goal).length > 500 || String(useCase).length > 800) throw new Error('Descrição maior que o limite permitido.');
+    const catalogue = typeof window !== 'undefined' ? window.ToolkitApps : (typeof require === 'function' ? require('./app-catalog.js') : null);
+    if ((language === 'javascript' || language === 'html') && recipeId === 'auto' && catalogue) {
+      const project = catalogue.interpret(goal);
+      if (project) return catalogue.generate(project.id);
+    }
     const recipe = selectRecipe(goal, language, recipeId);
     const code = commentIntro(language, goal, useCase) + (recipe ? recipe.templates[language] : fallback(language));
     const filename = (recipe ? recipe.id : 'estrutura_inicial') + '.' + LANGUAGES[language].ext;
@@ -312,6 +317,7 @@
     $('sidebar').classList.remove('open'); $('menuToggle').setAttribute('aria-expanded', 'false');
     if (page === 'historico') renderHistory();
     if (page === 'biblioteca') renderLibrary();
+    if (page === 'apps') renderApps();
     window.scrollTo({ top: 0, behavior: 'auto' });
   }
   function populateRecipes() {
@@ -337,20 +343,57 @@
     $('filename').textContent = result.filename;
     $('codeLanguage').textContent = LANGUAGES[result.language].name;
     $('resultSummary').textContent = result.title + ' — ' + result.summary;
-    $('resultStatus').textContent = result.matched ? 'Exemplo guiado' : 'Estrutura incompleta';
+    $('resultStatus').textContent = result.source === 'local-app' ? 'Aplicação local completa' : result.source === 'ai' ? 'IA generativa • revisar' : (result.matched ? 'Exemplo guiado' : 'Estrutura incompleta');
     $('resultStatus').classList.remove('success', 'warning');
-    $('resultStatus').classList.add(result.matched ? 'success' : 'warning');
+    $('resultStatus').classList.add(result.source === 'ai' ? 'warning' : (result.matched ? 'success' : 'warning'));
     $('resultAdvice').querySelector('p').textContent = result.advice;
     ['editCode', 'copyCode', 'downloadCode', 'saveCode'].forEach(id => $(id).disabled = false);
+    $('previewBtn').disabled = !/\.html?$/i.test(result.filename);
+    $('validateBtn').disabled = false;
+    closePreview();
   }
   function getEffectiveCode() {
     return $('codeEditor').hidden ? (currentResult && currentResult.code) : $('codeEditor').value;
+  }
+  function closePreview() {
+    const box=$('previewWrap'); if(!box)return;
+    box.hidden=true; $('previewFrame').removeAttribute('srcdoc');
+  }
+  function openPreview() {
+    if (!currentResult || !/\.html?$/i.test(currentResult.filename)) {toast('A prévia isolada é oferecida somente para HTML.');return;}
+    const code=getEffectiveCode();
+    if (code.length > 160000) {toast('Arquivo muito grande para a prévia.');return;}
+    // O iframe não possui allow-same-origin: não pode acessar os dados do Toolkit.
+    $('previewFrame').srcdoc=code;
+    $('previewWrap').hidden=false;
+    $('previewWrap').scrollIntoView({behavior:'smooth',block:'nearest'});
+    toast('Prévia isolada aberta. O armazenamento do aplicativo pode estar indisponível na prévia.');
+  }
+  function validateCurrent() {
+    if(!currentResult)return;
+    const code=getEffectiveCode(); const lang=currentResult.language;
+    let message='Análise básica: ', warning=false;
+    try {
+      if (lang==='html') {
+        if (!/<html\b/i.test(code) || !/<body\b/i.test(code)) throw Error('faltam elementos HTML principais.');
+        const doc=new DOMParser().parseFromString(code,'text/html');
+        if (!doc.body) throw Error('não foi identificado um corpo HTML.');
+        const scripts=Array.from(doc.querySelectorAll('script:not([src]):not([type="application/json"])'));
+        scripts.forEach(script=>{if(script.textContent.trim())new Function(script.textContent);});
+        message+='HTML e sintaxe dos scripts incorporados verificados sem erros de análise.';
+      } else if(lang==='javascript') {
+        new Function(code); message+='sintaxe JavaScript analisada sem erros.';
+      } else {message+='verificação sintática automática indisponível para '+LANGUAGES[lang].name+'. Execute no interpretador correspondente.'; warning=true;}
+    } catch(e) {message+='possível problema: '+String(e.message||e).slice(0,140);warning=true;}
+    $('validationFeedback').textContent=message+' Não equivale a teste funcional nem auditoria.';
+    $('validationFeedback').className='feedback '+(warning?'error':'ok');
   }
   function makeScript() {
     try {
       const result = generate({ goal: $('goal').value, useCase: $('useCase').value, language: $('language').value, recipeId: $('recipe').value });
       showResult(result);
-      toast(result.matched ? 'Exemplo guiado criado. Revise o código.' : 'Estrutura inicial criada. A lógica ainda precisa ser implementada.');
+      if (result.source === 'local-app') { $('language').value='html'; populateRecipes(); }
+      toast(result.source === 'local-app' ? 'Aplicação offline criada. Abra a prévia ou baixe o HTML.' : result.matched ? 'Exemplo guiado criado. Revise o código.' : 'Estrutura inicial criada. A lógica ainda precisa ser implementada.');
     } catch (error) { toast(error.message); $('goal').focus(); }
   }
   async function copyText(text) {
@@ -414,6 +457,23 @@
       actions.append(open, del); el.append(body, actions); $('historyList').append(el);
     });
   }
+  function renderApps() {
+    const catalog=window.ToolkitApps;
+    $('appsGrid').replaceChildren();
+    if(!catalog)return;
+    catalog.APPS.forEach(app=>{
+      const article=document.createElement('article');article.className='recipe-card';
+      const tag=document.createElement('span');tag.className='recipe-tag';tag.textContent='APLICAÇÃO HTML';
+      const title=document.createElement('h3');title.textContent=app.name;
+      const desc=document.createElement('p');desc.textContent=app.description;
+      const button=document.createElement('button');button.type='button';button.textContent='Criar aplicativo ↗';
+      button.addEventListener('click',()=>{
+        $('goal').value='Criar '+app.name.toLowerCase(); $('useCase').value=''; $('language').value='html';
+        populateRecipes(); $('recipe').value='auto'; updateCounters(); navigate('criador'); makeScript();
+      });
+      article.append(tag,title,desc,button);$('appsGrid').append(article);
+    });
+  }
   function renderLibrary() {
     const query = normalized($('librarySearch').value.trim());
     const entries = RECIPES.filter(r => normalized(r.title + ' ' + r.description + ' ' + r.category + ' ' + r.terms.join(' ')).includes(query));
@@ -467,8 +527,8 @@
       setFeedback('diffFeedback', additions + ' linha(s) adicionada(s); ' + removals + ' linha(s) removida(s).');
     } catch (error) { setFeedback('diffFeedback', error.message, true); }
   }
-  const termsHtml = `<h3>Finalidade</h3><p>Ferramenta educacional para criação e adaptação de exemplos de scripts, além de operações locais de texto. O software é fornecido “no estado em que se encontra”.</p><h3>Responsabilidade do usuário</h3><p>Revise cada script e teste em ambiente apropriado antes de utilizá-lo. É responsabilidade do usuário obter autorização para acessar serviços, arquivos, sistemas e bancos de dados. Não execute códigos que não compreenda.</p><h3>Limitações</h3><p>O gerador trabalha com receitas pré-programadas e estruturas iniciais: não é um modelo de inteligência artificial generativa, não garante resultado correto para qualquer solicitação e não constitui orientação profissional especializada.</p><h3>Autoria</h3><p>© Nailson Rodrigues de Lima. O uso de código gerado deve respeitar direitos de terceiros e licenças dos ambientes em que for empregado.</p>`;
-  const privacyHtml = `<h3>Processamento local</h3><p>O Toolkit processa objetivos, casos de uso e textos diretamente no navegador. Esta edição não inclui servidor próprio, telemetria, anúncios ou integração de IA em nuvem.</p><h3>Dados armazenados</h3><p>Se você clicar em “Salvar neste aparelho”, exemplos e descrições serão armazenados no localStorage do navegador, até você apagá-los ou limpar os dados do site. A preferência de tema também pode ser salva.</p><h3>Compartilhamento</h3><p>Esta edição não transmite automaticamente conteúdo informado pelo usuário. Ao copiar ou baixar textos, você controla seu uso posterior. Extensões de navegador e o ambiente de hospedagem podem ter suas próprias práticas de dados, fora do controle deste aplicativo.</p><h3>Controle</h3><p>Apague os scripts em “Meus scripts” e use as opções de limpeza de dados do navegador se desejar. Evite inserir senhas, credenciais e dados sensíveis no aplicativo.</p>`;
+  const termsHtml = `<h3>IA Estendida e licenças</h3><p>O modo guiado opera por regras, não por modelo generativo. O Chrome e o Ollama são ferramentas opcionais sujeitas a requisitos, instalação, licenças e limitações do usuário. A análise não executa nem homologa o código.</p><h3>Finalidade</h3><p>Ferramenta educacional para criação e adaptação de exemplos de scripts, além de operações locais de texto. O software é fornecido “no estado em que se encontra”.</p><h3>Responsabilidade do usuário</h3><p>Revise cada script e teste em ambiente apropriado antes de utilizá-lo. É responsabilidade do usuário obter autorização para acessar serviços, arquivos, sistemas e bancos de dados. Não execute códigos que não compreenda.</p><h3>Limitações</h3><p>No modo guiado, o gerador trabalha com receitas e estruturas iniciais e não é um modelo generativo. Modos com IA generativa são opcionais e podem produzir respostas incorretas ou inseguras; não garantimos adequação a produção.</p><h3>Autoria</h3><p>© Nailson Rodrigues de Lima. O uso de código gerado deve respeitar direitos de terceiros e licenças dos ambientes em que for empregado.</p>`;
+  const privacyHtml = `<h3>Processamento e IA</h3><p>O modo guiado processa localmente sem fazer solicitações de rede. Ao selecionar Chrome, o navegador pode executar modelo local e baixar arquivos de modelo conforme suas condições. Ao selecionar Ollama, o conteúdo do pedido é enviado ao serviço Ollama local configurado, exclusivamente após sua ação. A edição não possui backend próprio, telemetria ou anúncios.</p><h3>Dados armazenados</h3><p>Se você clicar em “Salvar neste aparelho”, exemplos e descrições serão armazenados no localStorage do navegador, até você apagá-los ou limpar os dados do site. A preferência de tema também pode ser salva.</p><h3>Compartilhamento</h3><p>O aplicativo não envia automaticamente textos a terceiros. Se você selecionar o Ollama, o prompt será transmitido ao endereço local informado ao clicar em gerar. A utilização de recursos do Chrome segue o ambiente do navegador. Ao copiar ou baixar textos, você controla seu uso posterior. Extensões de navegador e o ambiente de hospedagem podem ter suas próprias práticas de dados, fora do controle deste aplicativo.</p><h3>Controle</h3><p>Apague os scripts em “Meus scripts” e use as opções de limpeza de dados do navegador se desejar. Evite inserir senhas, credenciais e dados sensíveis no aplicativo.</p>`;
   function showInfo(title, body) {
     $('dialogTitle').textContent = title;
     $('dialogBody').innerHTML = body; // conteúdo estático interno, jamais conteúdo do usuário
@@ -476,9 +536,29 @@
   }
   function closeInfo() { if ($('infoDialog').close) $('infoDialog').close(); else $('infoDialog').removeAttribute('open'); }
 
+  // Interface pública controlada para receber código da IA sem executá-lo.
+  window.ToolkitUI = {
+    navigate,
+    loadAIResult(item) {
+      const lang = LANGUAGES[item.language] ? item.language : 'javascript';
+      $('goal').value = String(item.goal || '').slice(0, 500);
+      $('useCase').value = String(item.useCase || '').slice(0, 800);
+      $('language').value = lang; populateRecipes();
+      $('recipe').value = 'auto'; updateCounters();
+      const code = String(item.code || '').slice(0, 100000);
+      showResult({code, language: lang, filename: String(item.filename || 'assistencia.' + LANGUAGES[lang].ext),
+        matched: Boolean(item.matched), source: item.source === 'local-app' ? 'local-app' : item.source === 'guiado' ? 'guiado' : 'ai',
+        title:'Resultado enviado da IA Estendida', summary:'Código NÃO executado nem validado. Confira comportamento, segurança e dependências.',
+        advice:'Revise o código no editor e faça testes em ambiente isolado. Não insira credenciais.'});
+      navigate('criador');
+      toast('Código transferido ao editor. Use Validar e Prévia para testar HTML local.');
+    }
+  };
+
   document.addEventListener('DOMContentLoaded', () => {
     $('currentYear').textContent = String(new Date().getFullYear());
     $('statRecipes').textContent = String(RECIPES.length);
+    $('statApps').textContent=String(window.ToolkitApps ? window.ToolkitApps.APPS.length : 0);
     if (safelyRead(STORE_THEME, 'dark') === 'light') document.documentElement.classList.add('light');
     $$('.nav-btn').forEach(b => b.addEventListener('click', () => navigate(b.dataset.page)));
     $$('[data-go]').forEach(b => b.addEventListener('click', () => navigate(b.dataset.go)));
@@ -498,6 +578,7 @@
       $('resultSummary').textContent = 'Quando você gerar, verá um exemplo comentado, orientações de adaptação e sugestões de teste.';
       $('resultStatus').textContent = 'Aguardando descrição'; $('resultStatus').className = 'result-state';
       $('resultAdvice').querySelector('p').textContent = 'Explique a entrada, o resultado esperado e eventuais restrições. Depois revise e teste o código no seu ambiente.';
+      $('previewBtn').disabled=true;$('validateBtn').disabled=true;$('validationFeedback').textContent='';closePreview();
       ['editCode','copyCode','downloadCode','saveCode'].forEach(id => $(id).disabled = true); $('goal').focus();
     });
     $$('[data-prompt]').forEach(b => b.addEventListener('click', () => { $('goal').value = b.dataset.prompt; $('recipe').value = 'auto'; updateCounters(); makeScript(); }));
@@ -523,6 +604,9 @@
     $('copyCode').addEventListener('click', () => currentResult && copyText(getEffectiveCode()));
     $('downloadCode').addEventListener('click', () => currentResult && downloadText(currentResult.filename, getEffectiveCode()));
     $('saveCode').addEventListener('click', saveCurrent);
+    $('previewBtn').addEventListener('click',openPreview);
+    $('previewClose').addEventListener('click',closePreview);
+    $('validateBtn').addEventListener('click',validateCurrent);
     $$('.tool-tab').forEach(button => button.addEventListener('click', () => {
       const target = button.dataset.tool;
       $$('.tool-tab').forEach(el => { el.classList.toggle('active', el === button); el.setAttribute('aria-selected', String(el === button)); });
@@ -540,7 +624,7 @@
     $$('[data-text-transform]').forEach(b => b.addEventListener('click', () => { $('textOutput').value = transformText(b.dataset.textTransform, $('textInput').value); setFeedback('textFeedback', 'Transformação realizada.'); }));
     $$('[data-copy-target]').forEach(b => b.addEventListener('click', () => copyText($(b.dataset.copyTarget).value)));
     $('compareDiff').addEventListener('click', showDiff);
-    $('librarySearch').addEventListener('input', renderLibrary); renderLibrary();
+    $('librarySearch').addEventListener('input', renderLibrary); renderLibrary(); renderApps();
     $('clearHistory').addEventListener('click', () => { if (window.confirm('Apagar todos os scripts salvos neste navegador?')) { if (safelyWrite(STORE_HISTORY, [])) { renderHistory(); toast('Histórico apagado.'); } } });
     $('termsOpen').addEventListener('click', () => showInfo('Termos de Uso', termsHtml));
     $('privacyOpen').addEventListener('click', () => showInfo('Política de Privacidade', privacyHtml));

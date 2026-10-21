@@ -1,49 +1,69 @@
-# Toolkit do Programador
+# Toolkit do Programador — IA Estendida Local 3.0
 
-Aplicativo web responsivo de autoria de Nailson Rodrigues de Lima. O escopo é exclusivamente um **kit para programação**, sem qualquer relação com busca de passagens ou descontos em viagens.
+**Produto:** Toolkit do Programador • **Autoria:** Nailson Rodrigues de Lima • **Edição:** outubro de 2026.
 
-## Abrir e usar
+## Visão geral
 
-- **Sem instalação:** extraia o ZIP e abra `index.html` em um navegador moderno. Não há dependências externas.
-- **Arquivo único:** `Toolkit_do_Programador_Standalone.html` contém HTML, CSS e JavaScript. Abra diretamente, inclusive sem internet. Nesta variante, não há instalação PWA.
-- **GitHub Pages ou hospedagem HTTPS:** publique os arquivos da pasta na raiz do site. O manifesto e o service worker permitirão que navegadores compatíveis ofereçam a instalação como PWA; normalmente é preciso acessar o site ao menos uma vez com conexão.
-- **Android:** use o navegador Chrome ou outro moderno; para instalar PWA, a página deve estar hospedada em HTTPS. O arquivo único pode ser aberto localmente, se o gerenciador de arquivos e o navegador permitirem.
+Esta edição melhora o motor offline, corrigindo a situação em que `Criar um diário eletrônico` gerava apenas HTML inicial com `TODO`. Agora o pedido é interpretado como **aplicativo conhecido** e produz um arquivo HTML independente, contendo interface, lógica, criação/edição/exclusão/pesquisa e importação/exportação em JSON.
 
-## Como gerar um código
+A criação offline é **montagem determinística a partir de componentes e modelos locais**, e não um modelo de linguagem treinado. Não promete gerar qualquer software arbitrário. Os recursos de IA generativa do Chrome e Ollama permanecem opcionais e requerem compatibilidade/instalação do usuário. Não existe API paga obrigatória, conta de usuário nem backend do Toolkit.
 
-1. Entre em **Criador de scripts**.
-2. Explique a **função pretendida** em português (por exemplo, "Validar e-mail").
-3. Opcionalmente descreva um caso de uso; ele aparecerá documentado no código gerado.
-4. Selecione uma linguagem: JavaScript, Python, SQL/PostgreSQL, HTML, Bash ou PowerShell.
-5. Se preferir, selecione uma receita manualmente; caso contrário, o aplicativo tenta identificar termos de sua descrição.
-6. Clique em **Gerar exemplo de script**. Use **Editar código** para adaptar o exemplo antes de copiar, baixar ou salvar. Teste no ambiente adequado.
+## Formas de abrir
 
-O app oferece receitas locais pré-programadas, e **não** um gerador por LLM. Uma solicitação que não se encaixa em uma receita gera **somente uma estrutura inicial marcada como incompleta**. O caso de uso não é interpretado como especificação executável. Não cole tokens nem informações sensíveis.
+**Modo mais simples:** abra `Toolkit_do_Programador_IA_Estendida_Standalone.html`. Um único arquivo, sem Python, sem instalação e com os componentes locais incorporados. Pode funcionar offline, desde que o navegador tenha suporte às APIs usadas. A prévia HTML funciona em `iframe` isolado e, por segurança, o armazenamento nela pode ficar bloqueado.
 
-## Outros recursos
+**Publicação em GitHub Pages/HTTPS:** publique `index.html`, `styles.css`, `app.js`, `app-catalog.js`, `ai-engine.js`, `ai-ui.js`, `sw.js`, `manifest.webmanifest` e os ícones na mesma pasta. O PWA depende das condições de instalação do navegador; o cache funciona após acesso inicial sob HTTPS/localhost e não é aplicável ao standalone aberto como arquivo.
 
-- Ferramentas: validação e formatação de JSON, Base64 para texto UTF-8, codificação de componente de URL, normalização de texto, comparação de versões por linha.
-- Biblioteca: receitas pesquisáveis e atalho para abrir no criador.
-- Meus scripts: salvamento local no navegador via localStorage (até 25 itens), reabertura e exclusão. As alterações feitas no editor também podem ser salvas.
-- Tema claro/escuro, acessibilidade básica (labels, foco visível, navegação pelo teclado), Termos de Uso e Política de Privacidade.
+**Exemplo pronto para testar:** abra `Exemplos/diario_eletronico.html` (mesma aplicação produzida pelo catálogo); crie um registro, edite, pesquise e exporte JSON. Os dados ficam no dispositivo se o navegador permitir `localStorage`.
 
-## QA e limites conhecidos
+## O que o gerador local reconhece
 
-- O motor local passou em 13 testes automatizados de Node.js, e uma validação estática não encontrou IDs ausentes. Consulte `RELATORIO_QA.md` para os resultados.
-- A suíte de interface com Playwright está incluída em `tests/`, mas a execução foi bloqueada pelas políticas do navegador do ambiente de entrega; não equivale a homologação em navegador real. Os testes PWA e Android exigem verificação no dispositivo.
-- Os exemplos são educativos: seu funcionamento depende da linguagem, versão, permissões e dados fornecidos ao executá-los em outro ambiente. Templates de API usam endereço **fictício** e exigem substituição.
-- SQL usa sintaxe PostgreSQL; `clientes` é uma tabela de exemplo e pode não existir em seu banco. `$1` e `$2` são parâmetros do driver.
-- A funcionalidade de regex existe como receita de código, não como executor interno. Nenhum código gerado é executado pelo aplicativo.
-- Base64 não protege segredos. Histórico e tema usam armazenamento local, sujeito a limpeza ou bloqueio pelo navegador.
-- Instalabilidade PWA varia conforme navegador e hospedagem. O navegador decide quando oferecer a instalação.
+| Solicitação aproximada | Modelo HTML resultante | Recursos principais |
+|---|---|---|
+| Criar um diário eletrônico | `diario_eletronico.html` | data, título, humor, registro, CRUD, busca e backup |
+| Agenda de compromissos | `agenda_compromissos.html` | data, horário, local, CRUD, busca e backup |
+| Gerenciador de tarefas | `lista_tarefas.html` | tarefa, prazo, prioridade, concluída, CRUD, busca e backup |
+| Bloco de notas | `bloco_notas.html` | notas pesquisáveis, CRUD e backup |
+| Agenda de contatos | `agenda_contatos.html` | nome, telefone, e-mail, CRUD e backup |
+| Controle de despesas | `controle_despesas.html` | despesas, valores, categorias, CRUD e backup |
+| Controle de estoque | `controle_estoque.html` | produtos, quantidade, preço, CRUD e backup |
+| Calculadora | `calculadora.html` | soma, subtração, multiplicação, divisão e validação de zero |
 
-## Estrutura
+A descrição em português é normalizada para identificar palavras-chave e combinações conhecidas, com prioridade às expressões reconhecidas. O programa é gerado em **HTML + CSS + JavaScript** dentro de um único arquivo, mesmo quando o usuário começa pela opção JavaScript. Se selecionar Python, SQL, Bash ou PowerShell, o motor não fingirá gerar um aplicativo web nessas linguagens: serão usadas apenas receitas compatíveis ou estrutura inicial com alerta. A seleção manual de receita continua prevalecendo.
 
-- `index.html`: interface web
-- `styles.css`: visual responsivo
-- `app.js`: motor local e lógica
-- `icon.svg`, `icon-192.png`, `icon-512.png`: identidade visual
-- `manifest.webmanifest`, `sw.js`: instalabilidade/offline em HTTPS
-- `Toolkit_do_Programador_Standalone.html`: versão autônoma, um único arquivo
+### Criar pelo Toolkit
 
-© 2026 Nailson Rodrigues de Lima. Todos os direitos reservados sobre a identidade e implementação autoral. A geração de scripts não concede direitos sobre software de terceiros.
+1. Abra a página **Criador de aplicações e scripts** e escreva `Criar um diário eletrônico`.
+2. Clique em **Gerar exemplo de script**. O status deverá mostrar **Aplicação local completa** e o nome `diario_eletronico.html`.
+3. Use **Verificar sintaxe** para uma revisão sintática básica do HTML e de JavaScript incorporado, **Abrir prévia HTML** para inspecionar a interface, ou **Editar código** para alterar o arquivo.
+4. Use **Baixar arquivo** para obter o HTML independente. Abra o HTML baixado em um navegador para usar `localStorage` quando o navegador permitir. O backup JSON é recomendado.
+5. Outra opção é ir até **Aplicações completas** e escolher diretamente um dos oito aplicativos.
+
+### Outras ferramentas preservadas
+
+- 16 receitas em seis linguagens: JavaScript, Python, SQL PostgreSQL, HTML, Bash e PowerShell.
+- Editor, cópia, exportação e armazenamento de scripts no navegador.
+- Ferramentas locais de JSON, Base64 UTF-8, URL, textos e comparação de código.
+- IA Estendida: modo guiado por regras; IA Chrome ou Ollama opcional se modelos e ambiente estiverem disponíveis. Nenhum modelo generativo é fornecido no pacote.
+- Visual responsivo, temas claro/escuro, Termos de Uso, Política de Privacidade e identidade visual.
+
+## Privacidade, limites e segurança
+
+- O módulo offline do catálogo e o modo guiado não chamam APIs. O código gerado não inclui bibliotecas CDN, nem dependências pagas.
+- As aplicações de registros armazenam informações em `localStorage`. Isso **não é criptografia, sincronização, banco remoto ou backup automático**. Evite inserir dados sensíveis. Exportação JSON contém os dados em texto legível.
+- Se o navegador bloquear armazenamento (notavelmente durante a prévia isolada), a aplicação informa que os dados só duram até o fechamento e permite exportar JSON manualmente.
+- Importação JSON exige estrutura e tipo correspondentes; possui limite de 2 MB e até 500 registros por aplicação. **Importar substitui os dados atuais** após confirmação.
+- A prévia exige clique explícito, usa `iframe` com `sandbox="allow-scripts allow-downloads"`, sem `allow-same-origin`. O isolamento reduz acesso ao Toolkit, mas não garante impedir tentativas de rede feitas por código HTML manualmente modificado. Não pré-visualize código não confiável.
+- **Verificar sintaxe** faz apenas validação parcial no navegador. Um resultado positivo não certifica comportamento, acessibilidade, segurança nem compatibilidade universal.
+- Solicitações fora do catálogo retornam receitas existentes ou um rascunho marcado como incompleto. Gerar software arbitrário sem templates requer um modelo generativo compatível, revisão humana e testes.
+- O suporte a Windows 7 de 32 bits, navegadores antigos, PWA em cada dispositivo e IA local Chrome/Ollama depende de requisitos específicos e **não está homologado** nesta entrega.
+
+## Arquivos
+
+`index.html`, `app.js`, `app-catalog.js`, `ai-engine.js`, `ai-ui.js`, `styles.css`, `sw.js`, `manifest.webmanifest`, `icon.svg`, `icon-192.png`, `icon-512.png`, `Toolkit_do_Programador_IA_Estendida_Standalone.html`, `Exemplos/`, `tests/`, `README.md` e `RELATORIO_QA.md`.
+
+## Testes feitos e não feitos
+
+Consulte `RELATORIO_QA.md` para resultados reproduzidos, limitações e cenários de aceite. Não foi validada a conexão com um Ollama real nem a instalação PWA num telefone físico.
+
+© 2026 Nailson Rodrigues de Lima. Respeite as licenças de eventuais componentes externos e dos modelos opcionais.
