@@ -1,0 +1,49 @@
+{
+  "product": "AVI + EDI",
+  "version": "7.0.0",
+  "source": "AVI_EDI_V6.6.2_VERSAO_UNICA.html",
+  "artifact": "AVI_EDI_V7.0.0_PLATAFORMA_INTEGRADA.html",
+  "sha256": "c3ccc407b64e0c8cb78f93d9c5843786782912126cb30014b64d740ffafb54e8",
+  "static_validation": {
+    "inline_scripts": 11,
+    "node_ok": 11,
+    "node_failures": [],
+    "duplicate_ids_inherited": [
+      "aviValMRR",
+      "aviValMrr",
+      "downloadReadyTask",
+      "ediImportFile",
+      "previewReadyTask"
+    ],
+    "features": {
+      "canonical_title": true,
+      "reliability_center": true,
+      "diagnostics": true,
+      "preference_backup": true,
+      "preference_restore": true,
+      "global_error_logging": true,
+      "single_public_identity": true
+    }
+  },
+  "implemented": [
+    "Identidade única V7.0.0 para plataforma integrada",
+    "Central de confiabilidade com diagnóstico local",
+    "Sondagem de LocalStorage e IndexedDB",
+    "Indicador de conectividade com ressalva semântica",
+    "Exportação/restauração de preferências selecionadas com validação e limites",
+    "Relatório local JSON",
+    "Registro de erros JavaScript e rejeições não tratadas",
+    "Acessibilidade básica: diálogo, foco, Escape, aria-live, foco visível",
+    "Layout responsivo e respeito a reduced-motion"
+  ],
+  "not_claimed": [
+    "Não faz backup integral do IndexedDB nem de dados remotos",
+    "Não confirma disponibilidade do Supabase/Google/IA",
+    "Não homologa OAuth real nem licenciamento",
+    "Não publica automaticamente a aplicação"
+  ],
+  "runtime_tests": "Não executados em navegador real nesta geração",
+  "consolidation_timestamp_brasilia": "2026-11-24T09:00:00-03:00",
+  "consolidation_timestamp_display": "24/11/2026 às 09:00:00 (horário de Brasília, UTC−03:00)",
+  "artifact_sha256": "c3ccc407b64e0c8cb78f93d9c5843786782912126cb30014b64d740ffafb54e8"
+}
