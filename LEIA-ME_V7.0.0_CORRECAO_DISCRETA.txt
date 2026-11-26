@@ -1,0 +1,13 @@
+AVI + EDI V7.0.0 — CORREÇÃO VISUAL DISCRETA
+
+A versão do produto permanece V7.0.0. Esta entrega corrige somente o botão da Central de Confiabilidade.
+
+O botão agora é um ícone circular pequeno (38 × 38 px), sem texto permanente, com rótulo acessível e a mesma função de abrir a central.
+
+Instalação:
+1. Faça backup do HTML V7.0.0 atual.
+2. Use o arquivo AVI_EDI_V7.0.0_CORRECAO_DISCRETA.html no lugar do anterior.
+3. Abra a aplicação e toque no ícone ◈ no canto inferior direito para abrir a Central.
+4. Confirme que o painel abre e fecha normalmente.
+
+A correção não altera o motor, os dados, o login ou a versão do produto.

@@ -1,0 +1,12 @@
+{
+  "product": "AVI + EDI",
+  "version": "7.0.0",
+  "correction": "discreet reliability launcher",
+  "source": "AVI_EDI_V7.0.0_PLATAFORMA_INTEGRADA.html",
+  "artifact": "AVI_EDI_V7.0.0_CORRECAO_DISCRETA.html",
+  "sha256": "d94e4e75ef6371c7927d56b82bc3fad847d9c294c6d39f33c01886fea873ddcb",
+  "inline_scripts": 11,
+  "node_ok": 11,
+  "node_failures": [],
+  "runtime_android_test": "not performed"
+}
